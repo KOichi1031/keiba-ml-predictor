@@ -1,0 +1,305 @@
+# 特徴量可視化とモデル出力 - 使い方ガイド
+
+## 📁 提供ファイル
+
+1. **corrected_code_v4.py** - 学習用コード(修正済み)
+2. **visualization_and_output.py** - 可視化とモデル出力用コード
+3. **run_full_workflow.py** - 完全なワークフロー実行例
+
+---
+
+## 🚀 クイックスタート
+
+### 方法1: 統合実行(おすすめ)
+
+既に学習済みのモデルがある場合:
+
+```python
+from visualization_and_output import full_analysis_and_output
+
+# 全ての可視化と出力を一括実行
+df_pred, feature_imp = full_analysis_and_output(
+    gbm=gbm,                    # 学習済みモデル
+    X_train_df=X_train_df,      # 学習データの特徴量DataFrame
+    df_test_all=df_test_all,    # テストデータ全体
+    feature_cols=feature_cols,  # 特徴量名リスト
+    alpha=best_params['alpha'], # ソフトラベルのalphaパラメータ
+    gamma=best_params['gamma'], # ソフトラベルのgammaパラメータ
+    output_dir='./output/'      # 出力ディレクトリ
+)
+```
+
+これで以下が自動的に実行されます:
+- ✅ 特徴量重要度の可視化(3種類)
+- ✅ 予測結果の生成
+- ✅ 予測分布の可視化
+- ✅ ROC曲線の描画
+- ✅ 混同行列の作成
+- ✅ 確率区間別の分析
+- ✅ SHAP値の計算と可視化
+- ✅ 予測結果のCSV保存
+- ✅ モデルファイルの保存
+
+---
+
+### 方法2: ゼロから学習・可視化・出力まで実行
+
+```python
+# run_full_workflow.pyを実行
+python run_full_workflow.py
+```
+
+または、Jupyter Notebookで:
+
+```python
+# feature_cols を実際の特徴量名に設定
+feature_cols = ['馬体重', '騎手コード', '前走着差タイム', ...]
+
+# run_full_workflow.pyの内容を実行
+exec(open('run_full_workflow.py').read())
+```
+
+---
+
+## 📊 個別の可視化機能
+
+### 1. 特徴量重要度
+
+```python
+from visualization_and_output import plot_feature_importance, plot_all_feature_importance
+
+# 単一の重要度タイプ
+feature_imp = plot_feature_importance(gbm, feature_cols, top_n=30, importance_type='gain')
+
+# 3種類の重要度を並べて表示
+plot_all_feature_importance(gbm, feature_cols, top_n=20)
+```
+
+**importance_type:**
+- `'gain'`: 各特徴量による損失の改善量(推奨)
+- `'split'`: 分岐に使われた回数
+- `'weight'`: 重み付き使用回数
+
+---
+
+### 2. 予測結果の分析
+
+```python
+from visualization_and_output import (
+    create_prediction_dataframe,
+    plot_prediction_distribution,
+    plot_roc_curve,
+    plot_confusion_matrix,
+    analyze_by_probability_bins
+)
+
+# 予測結果のDataFrame作成
+df_pred = create_prediction_dataframe(
+    df_test_all, feature_cols, gbm, alpha, gamma, prob_threshold=0.5
+)
+
+# 予測確率の分布
+plot_prediction_distribution(df_pred)
+
+# ROC曲線
+auc_score = plot_roc_curve(df_pred)
+
+# 混同行列
+cm = plot_confusion_matrix(df_pred, threshold=0.5)
+
+# 確率区間別の的中率
+bin_analysis = analyze_by_probability_bins(df_pred, n_bins=10)
+```
+
+---
+
+### 3. SHAP値による解釈
+
+```python
+from visualization_and_output import (
+    compute_and_plot_shap,
+    plot_shap_dependence
+)
+
+# SHAP値を計算して全体的な重要度を可視化
+shap_df, bias = compute_and_plot_shap(gbm, X_train_df, top_n=20)
+
+# 特定の特徴量のSHAP dependence plot
+plot_shap_dependence(
+    shap_df, 
+    X_train_df, 
+    feature_name='前走着差タイム',  # 分析したい特徴量
+    color_feature='前走確定着順',   # 色付けに使う特徴量(オプション)
+    sample_size=5000                # プロット点数
+)
+```
+
+**SHAP dependence plotの見方:**
+- X軸: 特徴量の値
+- Y軸: SHAP値(予測への影響度)
+- 色: 別の特徴量の値(交互作用の確認)
+- 正のSHAP値 → 予測確率を上げる
+- 負のSHAP値 → 予測確率を下げる
+
+---
+
+### 4. モデルと予測結果の保存/読み込み
+
+```python
+from visualization_and_output import save_predictions, save_model, load_model
+
+# 予測結果の保存
+save_predictions(df_pred, output_path='predictions.csv')
+
+# モデルの保存
+save_model(gbm, model_path='lightgbm_model.txt')
+
+# モデルの読み込み
+gbm_loaded = load_model(model_path='lightgbm_model.txt')
+```
+
+---
+
+## 📈 出力ファイル一覧
+
+`output/`ディレクトリに以下のファイルが生成されます:
+
+| ファイル名 | 内容 |
+|-----------|------|
+| `predictions.csv` | 予測結果(予測確率、予測ラベル、真のラベル) |
+| `feature_importance.csv` | 特徴量重要度のランキング |
+| `probability_bin_analysis.csv` | 確率区間別の的中率分析 |
+| `lightgbm_model.txt` | 学習済みモデル |
+| `optuna_history.png` | Optunaの最適化履歴グラフ |
+
+---
+
+## 🎨 グラフのカスタマイズ例
+
+### 日本語フォント対応
+
+```python
+import matplotlib.pyplot as plt
+import japanize_matplotlib  # pip install japanize-matplotlib
+
+# または手動で設定
+plt.rcParams['font.sans-serif'] = ['MS Gothic', 'Yu Gothic', 'Hiragino Sans']
+plt.rcParams['axes.unicode_minus'] = False
+```
+
+### グラフのスタイル変更
+
+```python
+import seaborn as sns
+sns.set_style("whitegrid")
+plt.rcParams['figure.figsize'] = (12, 8)
+plt.rcParams['font.size'] = 12
+```
+
+---
+
+## 💡 よくある使い方
+
+### 1. 特定の閾値での性能評価
+
+```python
+for threshold in [0.3, 0.4, 0.5, 0.6, 0.7]:
+    cm = plot_confusion_matrix(df_pred, threshold=threshold)
+```
+
+### 2. 高確率サンプルの抽出
+
+```python
+# 予測確率が0.7以上のレース
+high_prob = df_pred[df_pred['pred_prob'] >= 0.7]
+print(f"高確率サンプル数: {len(high_prob)}")
+print(f"的中率: {high_prob['true_label'].mean():.2%}")
+```
+
+### 3. 誤分類の分析
+
+```python
+# False Positive(間違って1と予測)
+fp = df_pred[(df_pred['pred_label'] == 1) & (df_pred['true_label'] == 0)]
+print(fp[['前走レースID(新/馬番無)', '前走確定着順', 'pred_prob']])
+
+# False Negative(間違って0と予測)
+fn = df_pred[(df_pred['pred_label'] == 0) & (df_pred['true_label'] == 1)]
+print(fn[['前走レースID(新/馬番無)', '前走確定着順', 'pred_prob']])
+```
+
+### 4. 複数の特徴量のSHAP dependence plot
+
+```python
+# 重要度上位3特徴量を分析
+top_features = feature_imp.head(3)['feature'].tolist()
+
+for feat in top_features:
+    plot_shap_dependence(shap_df, X_train_df, feat)
+```
+
+---
+
+## ⚠️ 注意事項
+
+1. **SHAP計算は時間がかかる**
+   - データ量が多い場合は`sample_size`を調整
+   - 必要に応じてスキップ可能
+
+2. **メモリ使用量**
+   - 大規模データの場合は`n_bins`や`sample_size`を減らす
+
+3. **特徴量名の確認**
+   - `feature_cols`が実際のカラム名と一致しているか確認
+
+4. **日本語の文字化け**
+   - `japanize-matplotlib`をインストール
+   - または`encoding='utf-8-sig'`でCSV保存
+
+---
+
+## 🔧 トラブルシューティング
+
+### Q: グラフが表示されない
+```python
+# Jupyter Notebookの場合
+%matplotlib inline
+
+# または
+import matplotlib
+matplotlib.use('TkAgg')  # バックエンドを変更
+```
+
+### Q: メモリ不足エラー
+```python
+# SHAP計算のサンプル数を減らす
+plot_shap_dependence(shap_df, X_train_df, feat, sample_size=1000)
+
+# または学習データをサンプリング
+X_train_sample = X_train_df.sample(n=10000, random_state=42)
+```
+
+### Q: 特徴量名が文字化け
+```python
+# CSVファイルのエンコーディングを確認
+df = pd.read_csv('sample.csv', encoding='shift-jis')  # または 'cp932'
+```
+
+---
+
+## 📚 参考情報
+
+- [LightGBM公式ドキュメント](https://lightgbm.readthedocs.io/)
+- [SHAP公式ドキュメント](https://shap.readthedocs.io/)
+- [Optuna公式ドキュメント](https://optuna.readthedocs.io/)
+
+---
+
+## 🎯 まとめ
+
+1. **簡単実行**: `full_analysis_and_output()`で全て自動化
+2. **柔軟性**: 個別の関数で細かくカスタマイズ可能
+3. **保存機能**: モデル・予測結果を自動保存
+4. **豊富な可視化**: 特徴量重要度、ROC、混同行列、SHAP値など
+
+何か質問があればお気軽にお尋ねください!
