@@ -1,13 +1,5 @@
 # 特徴量可視化とモデル出力 - 使い方ガイド
 
-## 📁 提供ファイル
-
-1. **corrected_code_v4.py** - 学習用コード(修正済み)
-2. **visualization_and_output.py** - 可視化とモデル出力用コード
-3. **run_full_workflow.py** - 完全なワークフロー実行例
-
----
-
 ## 🚀 クイックスタート
 
 ### 方法1: 統合実行(おすすめ)
@@ -255,51 +247,3 @@ for feat in top_features:
 4. **日本語の文字化け**
    - `japanize-matplotlib`をインストール
    - または`encoding='utf-8-sig'`でCSV保存
-
----
-
-## 🔧 トラブルシューティング
-
-### Q: グラフが表示されない
-```python
-# Jupyter Notebookの場合
-%matplotlib inline
-
-# または
-import matplotlib
-matplotlib.use('TkAgg')  # バックエンドを変更
-```
-
-### Q: メモリ不足エラー
-```python
-# SHAP計算のサンプル数を減らす
-plot_shap_dependence(shap_df, X_train_df, feat, sample_size=1000)
-
-# または学習データをサンプリング
-X_train_sample = X_train_df.sample(n=10000, random_state=42)
-```
-
-### Q: 特徴量名が文字化け
-```python
-# CSVファイルのエンコーディングを確認
-df = pd.read_csv('sample.csv', encoding='shift-jis')  # または 'cp932'
-```
-
----
-
-## 📚 参考情報
-
-- [LightGBM公式ドキュメント](https://lightgbm.readthedocs.io/)
-- [SHAP公式ドキュメント](https://shap.readthedocs.io/)
-- [Optuna公式ドキュメント](https://optuna.readthedocs.io/)
-
----
-
-## 🎯 まとめ
-
-1. **簡単実行**: `full_analysis_and_output()`で全て自動化
-2. **柔軟性**: 個別の関数で細かくカスタマイズ可能
-3. **保存機能**: モデル・予測結果を自動保存
-4. **豊富な可視化**: 特徴量重要度、ROC、混同行列、SHAP値など
-
-何か質問があればお気軽にお尋ねください!
